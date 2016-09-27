@@ -15,7 +15,8 @@ type GasData {
 
 type Query {
   allGasData(last: Int): [GasData!]
-  gasData(id: ID!): GasData!
+  gasData(id: ID!): GasData
+  lastGasData: GasData
 }
 
 type Mutation {

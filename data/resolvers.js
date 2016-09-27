@@ -7,7 +7,10 @@ const resolvers = {
     },
     gasData(obj, {id}, {connectors}) {
       return connectors.gasData.getOne(id);
-    }
+    },
+    lastGasData(obj, _ , {connectors}) {
+      return connectors.gasData.getLast();
+    },
   },
   GasData: {
     id(obj){

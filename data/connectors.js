@@ -7,6 +7,7 @@ const connectors = {
   gasData: {
     getOne: (id) => gasData.findOne({_id: ObjectID(id)}),
     get: (last) => gasData.find({}).sort({lastUpdated: -1}).limit(last).toArray(),
+    getLast: () => gasData.find({}).sort({lastUpdated: -1}).limit(1).toArray().then((data)=> data[0]),
     add: (item) => gasData.insert(item),
   }
 };
