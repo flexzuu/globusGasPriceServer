@@ -11,7 +11,7 @@ const resolvers = {
   },
   GasData: {
     id(obj){
-      return obj['$loki'];
+      return obj['_id'];
     },
     lastUpdatedHuman(obj){
       return new Date(obj.lastUpdated).toString();

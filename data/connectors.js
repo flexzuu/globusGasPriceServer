@@ -1,29 +1,13 @@
-import loki from 'lokijs';
-const db = new loki(`${__dirname}/gasApp.db`,
-      {
-        autoload: true,
-        autoloadCallback : loadHandler,
-        autosave: true,
-        autosaveInterval: 10000,
-      });
-let gasDataCollection;
-let allGasDataView;
-
-    function loadHandler() {
-      // if database did not exist it will be empty so I will intitialize here
-      gasDataCollection = db.getCollection('gasData',{unique: 'lastUpdated'})
-      if (gasDataCollection === null) {
-        gasDataCollection = db.addCollection('gasData',{unique: 'lastUpdated'});
-      }
-      allGasDataView = gasDataCollection.addDynamicView('orderByLastUpdated');
-      allGasDataView.applySimpleSort('lastUpdated');
-    }
+import mongo from 'then-mongo';
+import ObjectID from 'bson-objectid';
+const db = mongo('mongodb://localhost/main', ['gasData']);
+const gasData = db.gasData;
 
 const connectors = {
   gasData: {
-    getOne: (id) => gasDataCollection.get(id),
-    get: (last) => allGasDataView.data().slice(-1*last),
-    add: (item) => gasDataCollection.insert(item),
+    getOne: (id) => gasData.findOne({_id: ObjectID(id)}),
+    get: (last) => gasData.find({}).sort({lastUpdated: -1}).limit(last).toArray(),
+    add: (item) => gasData.insert(item),
   }
 };
 
