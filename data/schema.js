@@ -4,6 +4,7 @@ scalar Date
 
 type DateHuman {
   day: Int!
+  dayOfWeek: String!
   month: Int!
   year: Int!
 

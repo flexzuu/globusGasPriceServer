@@ -29,6 +29,11 @@ const resolvers = {
     day(obj){
       return obj.getDate();
     },
+    dayOfWeek(obj){
+      const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch',
+        'Donnerstag', 'Freitag', 'Samstag'];
+      return weekdays[obj.getDay()];
+    },
     month(obj){
       return obj.getMonth()+1;
     },
