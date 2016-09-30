@@ -2,10 +2,23 @@ const typeDefinitions = `
 
 scalar Date
 
+type DateHuman {
+  day: Int!
+  month: Int!
+  year: Int!
+
+  hours: Int!
+  minutes: Int!
+  seconds: Int!
+
+  offset: Int!
+  readable: String!
+}
+
 type GasData {
   id: ID!
   lastUpdated: Date!
-  lastUpdatedHuman: String
+  lastUpdatedHuman: DateHuman!
   e5: Float
   e10: Float
   superPlus: Float

@@ -17,12 +17,38 @@ const resolvers = {
       return obj['_id'];
     },
     lastUpdatedHuman(obj){
-      return new Date(obj.lastUpdated).toString();
+      return new Date(obj.lastUpdated);
     }
   },
   Mutation: {
     addGasData(obj, args, {connectors}){
       return connectors.gasData.add(args);
+    }
+  },
+  DateHuman: {
+    day(obj){
+      return obj.getDate();
+    },
+    month(obj){
+      return obj.getMonth()+1;
+    },
+    year(obj){
+      return obj.getFullYear();
+    },
+    hours(obj){
+      return obj.getHours();
+    },
+    minutes(obj){
+      return obj.getMinutes();
+    },
+    seconds(obj){
+      return obj.getSeconds();
+    },
+    offset(obj){
+      return obj.getTimezoneOffset();
+    },
+    readable(obj){
+      return obj.toString();
     }
   },
   Date: {
