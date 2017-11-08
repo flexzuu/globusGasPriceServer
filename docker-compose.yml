@@ -1,0 +1,16 @@
+version: '3'
+services:
+  web:
+    build: .
+    environment:
+      DB_CONNECTION: http://database:5432
+      POSTGRES_PASSWORD: platonic-basement-usher-statuary
+    ports:
+     - "8080:8080"
+    links:
+     - "db:database"
+  db:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: platonic-basement-usher-statuary
+
