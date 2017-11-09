@@ -3,14 +3,16 @@ services:
   web:
     build: .
     environment:
-      DB_CONNECTION: http://database:5432
-      POSTGRES_PASSWORD: platonic-basement-usher-statuary
+      PGPASSWORD: platonic-basement-usher-statuary
     ports:
      - "8080:8080"
     links:
      - "db:database"
   db:
-    image: postgres:alpine
+    build:
+      context: ./db
+      dockerfile: Dockerfile
     environment:
       POSTGRES_PASSWORD: platonic-basement-usher-statuary
+      POSTGRES_INITDB_ARGS: "-A trust"
 

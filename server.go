@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
-	driver "github.com/arangodb/go-driver"
-	db "github.com/arangodb/go-driver/http"
+	"database/sql"
 
 	"github.com/flexzuu/gas-price-server/gasPrice"
+	_ "github.com/lib/pq"
 	"github.com/neelance/graphql-go"
 	"github.com/neelance/graphql-go/relay"
 )
@@ -17,20 +16,14 @@ import (
 var schema *graphql.Schema
 
 func init() {
-	conn, err := db.NewConnection(db.ConnectionConfig{
-		Endpoints: []string{os.Getenv("DB_CONNECTION")},
-	})
+	db, err := sql.Open("postgres", "user=postgres dbname=postgres host=database sslmode=disable")
 	if err != nil {
-		// Handle error
+		panic(err)
 	}
-	client, err := driver.NewClient(driver.ClientConfig{
-		Connection:     conn,
-		Authentication: driver.BasicAuthentication("root", os.Getenv("DB_PASSWORD")),
-	})
-	if err != nil {
-		// Handle error
+	for err := db.Ping(); err != nil; err = db.Ping() {
+		println("Trying to ping db")
 	}
-	schema = graphql.MustParseSchema(gasPrice.Schema, &gasPrice.Resolver{&client})
+	schema = graphql.MustParseSchema(gasPrice.Schema, &gasPrice.Resolver{db})
 }
 
 func main() {

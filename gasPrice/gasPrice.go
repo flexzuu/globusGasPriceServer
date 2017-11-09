@@ -1,9 +1,8 @@
 package gasPrice
 
 import (
-	"context"
+	"database/sql"
 
-	driver "github.com/arangodb/go-driver"
 	graphql "github.com/neelance/graphql-go"
 )
 
@@ -50,36 +49,30 @@ type date struct {
 }
 
 type Resolver struct {
-	Client *driver.Client
+	Database *sql.DB
 }
 
 func (r *Resolver) GasPrices() ([]*gasPriceResolver, error) {
-	c := *r.Client
-	ctx := context.Background()
-	db, err := c.Database(ctx, "_system")
-	if err != nil {
-		return nil, err
-	}
 
-	query := "FOR d IN gas RETURN d"
-	cursor, err := db.Query(ctx, query, nil)
+	query := `SELECT "id", "lastUpdated", "e5", "e10", "superPlus", "diesel", "autogas" FROM "public"."gasPrices"  
+			  ORDER BY "id" ASC`
+	rows, err := r.Database.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close()
-	var l []*gasPriceResolver
-	for {
+	defer rows.Close()
+	var gasPriceResolvers []*gasPriceResolver
+	for rows.Next() {
 		var gasPrice gasPrice
-		meta, err := cursor.ReadDocument(ctx, &gasPrice)
-		if driver.IsNoMoreDocuments(err) {
-			break
-		} else if err != nil {
+		if err := rows.Scan(&gasPrice.ID, &gasPrice.LastUpdated, &gasPrice.E5, &gasPrice.E10, &gasPrice.SuperPlus, &gasPrice.Diesel, &gasPrice.Autogas); err != nil {
 			return nil, err
 		}
-		gasPrice.ID = graphql.ID(meta.Key)
-		l = append(l, &gasPriceResolver{&gasPrice})
+		gasPriceResolvers = append(gasPriceResolvers, &gasPriceResolver{&gasPrice})
 	}
-	return l, nil
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return gasPriceResolvers, nil
 }
 
 func (r *Resolver) AddGasPrice(args *struct {
@@ -90,32 +83,15 @@ func (r *Resolver) AddGasPrice(args *struct {
 	Diesel      float64
 	Autogas     float64
 }) (*gasPriceResolver, error) {
-	c := *r.Client
-	ctx := context.Background()
-	db, err := c.Database(ctx, "_system")
+	// date := date{
+	// 	Time: args.LastUpdated,
+	// }
+	var gasPrice gasPrice
+	query := `INSERT INTO "gasPrices"("lastUpdated", "e5", "e10", "superPlus", "diesel", "autogas") VALUES($0, $1, $2, $3, $4, $5) RETURNING "id", "lastUpdated", "e5", "e10", "superPlus", "diesel", "autogas";`
+	err := r.Database.QueryRow(query, args.LastUpdated, args.E5, args.E10, args.SuperPlus, args.Diesel, args.Autogas).Scan(&gasPrice.ID, &gasPrice.LastUpdated, &gasPrice.E5, &gasPrice.E10, &gasPrice.SuperPlus, &gasPrice.Diesel, &gasPrice.Autogas)
 	if err != nil {
 		return nil, err
 	}
-	col, err := db.Collection(ctx, "gas")
-	if err != nil {
-		return nil, err
-	}
-	date := date{
-		Time: args.LastUpdated,
-	}
-	gasPrice := gasPrice{
-		LastUpdated: date,
-		E5:          args.E5,
-		E10:         args.E10,
-		SuperPlus:   args.SuperPlus,
-		Diesel:      args.Diesel,
-		Autogas:     args.Autogas,
-	}
-	meta, err := col.CreateDocument(ctx, gasPrice)
-	if err != nil {
-		return nil, err
-	}
-	gasPrice.ID = graphql.ID(meta.Key)
 	return &gasPriceResolver{&gasPrice}, nil
 }
 
