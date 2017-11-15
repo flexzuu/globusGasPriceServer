@@ -2,6 +2,7 @@ package gasPrice
 
 import (
 	"database/sql"
+	"time"
 
 	graphql "github.com/neelance/graphql-go"
 )
@@ -44,6 +45,15 @@ type gasPrice struct {
 	Diesel      float64
 	Autogas     float64
 }
+
+func (gp *gasPrice) setID(id int64) {
+	intID := int32(id)
+	gp.ID.UnmarshalGraphQL(intID)
+}
+func (gp *gasPrice) setLastUpdated(lastUpdated time.Time) {
+	gp.LastUpdated.Time.UnmarshalGraphQL(lastUpdated)
+}
+
 type date struct {
 	Time graphql.Time
 }
@@ -64,9 +74,13 @@ func (r *Resolver) GasPrices() ([]*gasPriceResolver, error) {
 	var gasPriceResolvers []*gasPriceResolver
 	for rows.Next() {
 		var gasPrice gasPrice
-		if err := rows.Scan(&gasPrice.ID, &gasPrice.LastUpdated, &gasPrice.E5, &gasPrice.E10, &gasPrice.SuperPlus, &gasPrice.Diesel, &gasPrice.Autogas); err != nil {
+		var id int64
+		var lastUpdated time.Time
+		if err := rows.Scan(&id, &lastUpdated, &gasPrice.E5, &gasPrice.E10, &gasPrice.SuperPlus, &gasPrice.Diesel, &gasPrice.Autogas); err != nil {
 			return nil, err
 		}
+		gasPrice.setID(id)
+		gasPrice.setLastUpdated(lastUpdated)
 		gasPriceResolvers = append(gasPriceResolvers, &gasPriceResolver{&gasPrice})
 	}
 	if err := rows.Err(); err != nil {
@@ -83,15 +97,23 @@ func (r *Resolver) AddGasPrice(args *struct {
 	Diesel      float64
 	Autogas     float64
 }) (*gasPriceResolver, error) {
-	// date := date{
-	// 	Time: args.LastUpdated,
-	// }
+	var id int64
+	var lastUpdated time.Time
 	var gasPrice gasPrice
-	query := `INSERT INTO "gasPrices"("lastUpdated", "e5", "e10", "superPlus", "diesel", "autogas") VALUES($0, $1, $2, $3, $4, $5) RETURNING "id", "lastUpdated", "e5", "e10", "superPlus", "diesel", "autogas";`
-	err := r.Database.QueryRow(query, args.LastUpdated, args.E5, args.E10, args.SuperPlus, args.Diesel, args.Autogas).Scan(&gasPrice.ID, &gasPrice.LastUpdated, &gasPrice.E5, &gasPrice.E10, &gasPrice.SuperPlus, &gasPrice.Diesel, &gasPrice.Autogas)
+	query := `
+	INSERT INTO "gasPrices"("lastUpdated", "e5", "e10", "superPlus", "diesel", "autogas") 
+	VALUES($1, $2, $3, $4, $5, $6) 
+	RETURNING "id", "lastUpdated", "e5", "e10", "superPlus", "diesel", "autogas";
+	`
+	err := r.Database.
+		QueryRow(query, args.LastUpdated.Time, args.E5, args.E10, args.SuperPlus, args.Diesel, args.Autogas).
+		Scan(&id, &lastUpdated, &gasPrice.E5, &gasPrice.E10, &gasPrice.SuperPlus, &gasPrice.Diesel, &gasPrice.Autogas)
 	if err != nil {
 		return nil, err
 	}
+
+	gasPrice.setID(id)
+	gasPrice.setLastUpdated(lastUpdated)
 	return &gasPriceResolver{&gasPrice}, nil
 }
 
